@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<head>
+    <title>Word Count</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f2f2f2;
+            border-radius: 5px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .form-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .result-container {
+            margin-top: 20px;
+            background-color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .word-count {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Word Count</h1>
+    <div class="form-container">
+        <input type="file" id="fileInput" accept=".txt">
+        <button onclick="uploadFile()">开始统计</button>
+    </div>
+    <div class="result-container">
+
+        <div id="wordCountResult"></div>
+    </div>
+</div>
+
+<script>
+    function uploadFile() {
+        var fileInput = document.getElementById("fileInput");
+        var file = fileInput.files[0];
+        var formData = new FormData();
+        formData.append("file", file);
+
+        fetch("/mapreduce", {
+            method: "POST",
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => displayResult(data))
+            .catch(error => console.error(error));
+    }
+
+    function displayResult(result) {
+        var resultContainer = document.getElementById("wordCountResult");
+        resultContainer.innerHTML = "";
+
+        for (var word in result) {
+            var count = result[word];
+            var wordCount = document.createElement("p");
+            wordCount.className = "word-count";
+            wordCount.textContent = word + ": " + count;
+            resultContainer.appendChild(wordCount);
+        }
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,488 @@
+Abstract
+Over the last decade, several advancements have happened in distributed and parallel computing. A lot of data is generated daily from various sources, and this speedy data proliferation led to the development of many more frameworks that are efficient to handle such huge data e.g. - Microsoft Dryad, Apache Hadoop, etc. Apache Hadoop is an open-source application of Google MapReduce and is getting a lot of attention from various researchers. Proper scheduling of jobs needs to be done for better performance. Numerous efforts have been done in the development of existing MapReduce schedulers and in developing new optimized techniques or algorithms. This paper focuses on the Hadoop MapReduce framework, its shortcomings, various issues we face while scheduling jobs to nodes and algorithms proposed by various researchers. Furthermore, we then classify these algorithms on various quality measures that affect MapReduce performance.
+
+Previous articleNext article
+Keywords
+HadoopMapReduceTask trackerHDFSScheduling
+1. Introduction
+The increasing need for large-scale data processing (big data) requires a powerful framework that can process datasets in a distributed and parallel manner at an acceptable speed [1]. Keeping this necessity in mind in 2008, Yahoo released Hadoop. Hadoop is a highly available open-source data storage engine [1]. Hadoop provides a combination of both processing and storage. For storage, Hadoop distributed file system (HDFS) and for processing, it uses MapReduce [2]. It provides a framework to hold large sets of data that can be accessed by users present in the network. Now, the Hadoop ecosystem is managed by Apache software foundations. MapReduce is a simple and excellent model to manage the huge amount of data parallelly in a distributed fashion. It was introduced by Google in 2004. One MapReduce cluster may contain thousands of machines. The data is first stored and organized in HDFS (Hadoop distributed file system) and is sent for processing to Mapreduce. In MapReduce, the job is processed in two main phases (map and reduce type tasks). Once the mapping is done, the job is shuffled and partitioned and then send to reducer for further processing [3], [4], [5], [6]. So in the MapReduce framework, the tasks are executed in the following sequence:
+Map Phase- retrieves input data and generates key-value pairs using the Input Format mapper. These key-value pairs are processed according to the map function output so that the generated output is stored on local disks and status and the progress is communicated to the master node (task tracker) [7].
+
+Shuffle and sort phase- the input to the reducer is sorted according to the key. This sorting is done and transferring of map outputs as input to the next phase i.e. to the reducer is done by the shuffle phase [8].
+Reduce phase- the sorted key is processed and the output file is stored in HDFS [9].
+
+
+Proper scheduling of jobs plays an imperative role in upgrading the cluster’s performance. By default, Hadoop has three scheduling algorithms- First come first serve or first in first out (FIFO), capacity scheduler, and fair scheduler. To handle this shared distributed environment, effective scheduling methods or algorithms are needed to increase the overall performance. Thus, the main focus of this review is to highlight the various scheduling algorithms proposed by various researchers and compare them on various measures.
+
+1.1. Overview of Hadoop
+When data sets start to exceed the capacity of storage on a single node, there is a need to store the data on multiple nodes across the network. Keeping this necessity in mind Doug Cutting proposed a framework that is based on Java and works on giant data sets in a distributed environment. It is a highly available open-source data storage engine. One of the advantages of using Hadoop is that it can find and handle the errors in the initial layer only.
+
+It provides a framework to work with petabytes of data distributed over thousands of nodes. The main idea of Hadoop is to store large files in small numbers rather than storing more files of small size. One of the advantages of using Hadoop is that it can find and handle the errors in the initial layer only and provide both the storage and the processing facility.
+•
+HDFS (Hadoop Distributed File System): the storage part is handled by HDFS in Hadoop. HDFS distributes the multiple copies of the data blocks to the nodes for better reliability and fast computations. The data stored in HDFS is fetched by MapReduce for computation [9], [10], [11], [12].
+
+•
+Hadoop MapReduce: MapReduce is the processing framework of Hadoop. MapReduce nodes are capable of processing a very huge amount of data in parallel. It processes the data sets in two stages- Map and Reduces stage. Map function performs the group action on the petitioned input data and another side reducer further applies the group function on the generated map output and merges them for final output [11], [13], [14], [15].
+1.2. Hadoop distributed file system
+HDFS works on master/slave architecture.it stores the data for the computation. It has two main nodes- Name node and data nodes. Both work together for the smooth functioning of the Hadoop cluster.
+•
+Name node- the name node acts as a master node in HDFS master–slave architecture. The main work of the name node is to monitor the working of data nodes and maintain all the metadata i.e. several data blocks, block locations, free nodes, storage information, replication (default- 3 replicas), etc. The metadata helps in faster retrieval of the data. name node is responsible for monitoring the slave nodes, and assign the tasks to them, receive the heartbeat signals from slave nodes, it also keeps a check on the access of the file by the client [16].
+
+•
+Data nodes- data nodes act as a slave to the master node and i.e. they are also termed as slave nodes. They are in direct contact with the name node. Data nodes are employed on each machine and stores the actual data. It serves the read and writes requests made by the client. Namenode is a master node, it keeps the data rather than storing the data, actual data is stored any data nodes. The main work of the data node is to report the name node by sending the heartbeat signals (by default frequency is 3 sec.), data nodes create the block replicas, can delete them as and when instructed by name node [17], [18].
+
+
+The input file received by the HDFS is first divided into one or many blocks and then a copy of each block is created (by default replication factor is 3). Input splits and the replicated copies of these blocks are stored on slave nodes. Copies are sent to nodes other than processing nodes because the copy is used in case of node failure. This helps in maintaining fault tolerance. MasterNode is the main entity of this framework as it is responsible for managing the whole file system. It keeps track of all the information related to the file and block placement. HDFS also has all the information related to file like its replication factor, its location, etc. Whereas, slave nodes are responsible for all read-write operations and it is also responsible for sending the current status of each node to the NameNode [16], [19].
+
+1.3. Hadoop MapReduce
+MapReduce [3] is a simple yet robust processing framework for very huge-scale datasets. It processes the enormous amount of data in a distributed and parallel manner. The MapReduce cluster consists of thousands of nodes that are distributed over a network. It works on master/slave architecture. The master node is the Job Tracker and the task tracker serves as a slave to the master node. (See Fig. 1, Fig. 2, Fig. 3, Fig. 4, Fig. 5, Fig. 6, Fig. 7, Fig. 8, Fig. 9, Fig. 10, Fig. 11).
+
+
+Download : Download high-res image (245KB)
+Download : Download full-size image
+Fig. 1. Hadoop Architecture [5].
+
+
+Download : Download high-res image (156KB)
+Download : Download full-size image
+Fig. 2. HDFS Architecture [6].
+
+
+Download : Download high-res image (158KB)
+Download : Download full-size image
+Fig. 3. HDFS and MapReduce architecture [41].
+
+
+Download : Download high-res image (108KB)
+Download : Download full-size image
+Fig. 4. MapReduce architecture [5].
+
+
+Download : Download high-res image (271KB)
+Download : Download full-size image
+Fig. 5. MapReduce cluster [27].
+
+
+Download : Download high-res image (136KB)
+Download : Download full-size image
+Fig. 6. Data locality in MapReduce.
+
+
+Download : Download high-res image (101KB)
+Download : Download full-size image
+Fig. 7. Types of locality [11].
+
+
+Download : Download high-res image (237KB)
+Download : Download full-size image
+Fig. 8. Synchronization in MapReduce [2].
+
+
+Download : Download high-res image (131KB)
+Download : Download full-size image
+Fig. 9. FIFO scheduling.
+
+
+Download : Download high-res image (76KB)
+Download : Download full-size image
+Fig. 10. Capacity scheduler [12].
+
+
+Download : Download high-res image (237KB)
+Download : Download full-size image
+Fig. 11. Authors compilation of data.
+
+1.4. Components of MapReduce.
+I.
+Job tracker- the JobTracker is responsible for handling task tracker or the worker nodes, it tracks the resources consumed or free resources available, so this master node is responsible for all of the task, resource management and also job life-cycle management which includes scheduling of tasks, tracking progress and helps in fault tolerance, etc. so, TaskTracker main job is to-
+
+•
+Receive the request from the user or client for MapReduce processing.
+
+•
+It is in direct contact with NameNode, so before allocating tasks it asks for the location of the data from NameNode.
+
+•
+Keeping the data locality in mind, find the best slave node for processing.
+
+•
+Monitors the progress of each slave node and submit the progress of the whole job to the client.
+
+•
+Job tracker is a single failure point, so its failure might not affect Hadoop but can halt the execution of MapReduce.
+
+II.
+Task tracker- the Task Tracker is responsible for –
+
+•
+Process the tasks or the order receive from Job Tracker
+
+•
+Sending task progress report to the master node periodically.
+
+•
+It assigns and administers map and reduce tasks which are executed on Data Nodes (task tracker runs on data nodes)
+
+•
+Not a single point failure. Failure of this slave node does not affect MapReduce processing, as the fail node work will be assigned to another node.
+
+
+2. Working of MapReduce
+Firstly, the data set or the work submitted by the user is divided into blocks (e.g. 64 MB block) and copy of each block get saved on local disks on different nodes (by default 3 replicas) by Hadoop Distributed File System (HDFS) [20], [21].
+
+The processing part is done by MapReduce. MapReduce processing comprised of two main tasks- Map and reduce [22], [23]. The detailed processing of MapReduce is explained below-MapReduce execution starts with submitting the input file which resides in HDFS. This input file is then split according to an input format. The input format is the first step of this framework and is responsible for creating splits and further divide them into records and these records are sent for processing to the mapper.
+I.
+Record reader- It fetches the data from input split until it reaches the end of the file and then converts the data into key/value pair (uses TextInputForma by default). It then assigns the unique number to every single line of the file that unique number is known as byte offset number. This key-value output of the record reader is then sent to the mapper for execution.
+
+II.
+Mapper- It executes the input of RecordReader and create its new key-value pair, and this mapper generated key-value pair is distinct from the pairs generated by the record reader. The intermediate output i.e. the output of mapper is then saved on local nodes because this output is the temporary data and therefore storing this data on HDFS will consume unnecessary space.
+
+III.
+Combiner- combiner acts as a small reducer or semi-reducer in Hadoop Mapreduce architecture. The use of a combiner is optional for the programmer. Combiner takes the input of the map class, process it, and save it with the same key and pass it further for processing.
+
+IV.
+Partitioner- partitioner is used when we are using more than one reducer in our MapReduce processing. Partitioner processes the output of combiners and partitions them based on the key generated by the combiner. It uses the hash function for partitioning- key (or a subset of the key) is used to derive the partition.
+
+V.
+Shuffling and sorting- now, the partitioner output is shuffled and is sent to reduce node. The shuffling is the physical movement of the output over a network. After shuffling of the data, the intermediate output is merged and sorted and forwarded as input to the reducer.
+
+VI.
+Reducer- mapper intermediate key-value pairs are forwarded to reducer for further processing. The reducer applies the reducer function to every intermediate key-value pair and generates the output. This output is the main final output and is send HDFS for storage.
+
+VII.
+Record writer- the output pairs of the reducer is written by Record Writer into output files and these files are produced to the user.
+
+VIII.
+Output format- as explained earlier, the output files are generated by record writer. But the way how the output is to be written in files is determined by OutputFormat.
+
+•
+Submission of the input data used for processing the job.
+
+•
+After the submission of the data to the name node, the name node divides the data into blocks and also generates the duplicate copy of each block according to the replication factor for fault tolerance.
+
+•
+Map and reduce tasks assign to idle slave nodes.
+
+•
+Submission of the job to the job tracker.
+
+•
+The job tracker assigns the Map task to the corresponding slave nodes and the intermediate (key, value) pairs are sent to memory.
+
+•
+The intermediate values are divided into partitions according to default hash function, and the identical pairs (key, value) move to the same partition.
+
+•
+Reducer function data reads the data and performs the sort and shuffle function.
+
+•
+After the execution of all maps and reduce tasks is done, the master node generates the last output.
+
+
+2.1. MapReduce scheduling and issues
+The popularization of Hadoop MapReduce attracted many research communities. Task scheduling becomes the most preferred interest area of researchers. In MapReduce, multiple jobs are split into multiple tasks and these tasks are processed in a distributed parallel environment. All scheduling and assignment of the job for the map and reduce phases are done at both node and task level. For this, the job tracker on which the scheduler resides coordinates with the task tracker to allocate resources to the tasks. The three main issues in MapReduce scheduling- locality, synchronization, and fairness (See Table 1, Table 2).
+
+Table 1. Comparison of different scheduling issues.
+
+Algorithm/strategy	Data locality	Fairness	Speculative execution
+Delay scheduling [13]	✓	✓	
+LATE [14]			✓
+Quincy [39]	✓	✓	
+Matchmaking [34]	✓		
+LARTS [35]	✓		
+SAMR [31]			✓
+ATAS [38]			✓
+MCP [15]			✓
+Throughput Optimal [16]	✓		
+Dynamic Proportional Share scheduler [36]		✓	
+Purleius [18]	✓		
+ChEsS [17]	✓		
+Table 2. Comparison of different performance Measures.
+
+Algorithm/Strategy	Throughput	Response Time	Turnaround Time	Execution time	Network traffic
+Delay Scheduling [13]	✓	✓			
+LATE [14]		✓			
+Quincy [39]	✓				✓
+Deadline Constraint [33]	✓	✓			
+Matchmaking [34]	✓	✓			
+LARTS [35]			✓		
+SAMR [31]		✓	✓	✓	
+ATAS [38]	✓			✓	
+MCP [15]	✓			✓	
+Throughput Optimal [16]				✓	✓
+Dynamic Proportional share scheduler [36]				✓	
+Purleius [18]					✓
+ChEsS [17]	✓				
+2.2. Issues in MapReduce scheduling
+Locality- In Hadoop, all the storage is done at HDFS. When the client demands for MapReduce job then the Hadoop master node i.e. name node transfer the MR code to the slaves' node i.e. to data nodes on which the actual data related to the job exists [10], [11], [13], [24].
+
+Due to huge data sets, the problem of cross-switch network traffic was common in Hadoop. To overcome this problem concept of data locality come into existence. In data locality, Instead of moving the huge data set near to the computation node, data locality is a process of moving the computation near to the node where the actual data exists. This not only increases the throughput but also reduces the network traffic [12], [25], [26], [27], [28].
+
+2.2.1. Various data locality can be categorized
+Node locality- in this locality the mapper and the data are on the same node, i.e. the data is locally available to the mapper. This is the best and most preferred locality.
+
+Rack or intra rack locality- sometimes having a node locality is not possible due to limited resources or resource unavailability, then, in that case, it is best to run map tasks on the same rack but a different node. This locality is the most preferred one after node locality.
+
+Rack-off or inter-rack locality- in case both of the above locations are not possible, we have to process a map task on a different node that is on a different rack. This locality is the least preferred as this not only increases network traffic but also increases the cost of transferring I/0.
+
+2.3. Synchronization
+Once the map phase has been completed, its intermediate output is passed to reduce the phase as input for further processing. To achieve synchronization in MapReduce, the barrier between the map and the reduced phase is applied. All the output of the map is grouped according to the key, which is done by the huge distributed sort that includes all the nodes of the map and the nodes that run the reduced phase.
+
+Fairness- companies like Amazon, Yahoo, and Google share data warehouse of the cloud for performing MapReduce jobs. A heavy map-reduce job may dominate the utilization of the shared clusters, due to which jobs with short computation do not get the desired response time. So, it is important to maintain fairness between each job in a shared cluster.
+
+Speculative Tasks- in the MapReduce model the job is divided into n tasks, and these tasks run in parallel so the overall job execution time reduces. Rather than running the tasks in order (sequentially), MapReduce route the tasks in a parallel manner and this makes the execution time-sensitive to sluggish tasks. Slow working of tasks can be because of any reason – resources unavailability, hardware degradation, any misconfiguration, etc. Hadoop is not responsible for detecting a problem rather it find the slow running tasks and run its backup copy on another node. This process of launching a backup copy of tasks on another node is known as the speculative execution of tasks.
+
+3. Scheduling in mapreduce
+MapReduce chooses a runtime scheduling pattern [50]. The assignment of the data blocks to the available nodes is done by the scheduler for execution. This strategy can slow down the overall processing and also bring in runtime costs [28]. So the execution of jobs by slave nodes should be done in such a way that it can improve the end performance. MapReduce default scheduling includes FIFO, Fair scheduler, and capacity scheduler. Default scheduling algorithms sometimes fail to fulfil locality parameter and this results in poor utilization of clusters. The current section starts with the default MapReduce scheduling and then discusses the various solutions available in the literature to address the problems above discussed.
+
+3.1. FIFO scheduling algorithm
+FIFO is the default scheduling algorithm of Hadoop MapReduce. The main objective of this scheduling is to schedule the tasks first come first serve. In this, the job tracker fetches the oldest job from the queue irrespective of the size and priority. FIFO works well with a single type of job but in case of large and multiple types of jobs, its performance degrades [24].
+
+3.1.1. Fair scheduling algorithm
+The main idea behind this algorithm is to ensure that all the jobs get an equal share of resources [5], [29], [30]. In the case of a single job all the resources or cluster is consumed by that particular job only. The main objective of this scheduling is to distribute the compute resources to the available jobs/users. It works well with both small and large clusters. The foremost shortcoming of this algorithm is that it ignores the job weight of each node.
+
+3.1.2. Capacity scheduler
+In this scheduling, jobs are allocated to multiple queues according to the conditions and then allocate the certain node capacity for each queue. For better performance and maximum utilization of resources, it reallocates the resources of the free queue to the heavily loaded queue or the queue working at its full capacity [5], [29], [30], [31], [32]. When that free queue receives tasks for processing then after completing the currently running tasks the resources are given back to the original queue.
+
+MapReduce default scheduler is FIFO i.e. First in First out. But this scheduler has its own merits and demerits. As MapReduce got popular the research and need for efficient scheduling techniques start to demand more time. Thus, many researchers and data scientists started their exploration in improving or developing algorithms for efficient scheduling in MapReduce.
+
+3.2. Other scheduling algorithms
+3.2.1. Delay scheduling
+Guo et.al. in 2012 proposed [33] a scheduler that overcomes the drawback of the fair scheduler and tries to eliminate the locality issues. The main aim is to improve the locality with relaxed fairness. In the case of small jobs, the problem of the head of line scheduling is common, to overcome this the jobs are sent for processing to the nodes on which data is available locally so that fairness can be maintained. But in the case of large-size jobs, the problem of the sticky slot is very common. This happens when the job finishes its computation comparison to others but cannot leave the slot for re-issue. In delay scheduling when the request is made for a new task then it will find the job which will fulfill the fairness constraints. If a scheduler is not able to schedule according to this then it does not allocate the task rather it waits for some amount of time and waits for other nodes to launch the tasks.
+
+3.2.2. LoNARS: Locality and Network-Aware reduce task Scheduling
+This focuses on the effective scheduling of tasks in the reducer. Much work has been done on the map task of scheduling this paper, on the contrary, to focus on reducing task scheduling. After the completion of the first phase, the output is passed to the next stage and this might lead to network congestion which slows down the process. Their purpose is to allocate reduce tasks closer to the map so that access time decreases.
+
+3.2.3. Data-Locality aware task scheduling Algorithm
+Zhang et al. [32] in their paper focus on improving MapReduce's overall performance by proposing a scheduling technique on data locality. This algorithm helps in improving the locality of data which in return gives better response time, and also reduces the network traffic. These algorithms allocate only those tasks to the nodes whose data is available on that requesting node. If it fails to fulfil data locality, then algorithms aim for rack and rack-off locality. In cases other than data locality, the proposed algorithm decides whether to allocate the task of reserve it for nearby free node. This decision is based on waiting time and transmission time calculation.
+
+3.2.4. Longest approximate time to end (LATE)
+Job response time is one of the factors that affect the overall performance of a cluster. This motivates Zahria et. al [14] to propose a scheduler that focuses on improving job response time. This scheduler searches for slow tasks and processes its backup task on another node. The slow progress of task can be because of many reasons like- high CPU load, the slowdown of background tasks or processes, etc. these slow tasks are called speculative tasks, and running a backup copy of these speculative tasks is known as speculative execution. The LATE Scheduler gives priority to slow tasks for speculative execution and then the fastest node is selected for executing speculation [7].
+
+3.2.5. Deadline constraint scheduler
+Users always come up with some restrictions and this scheduler aims at satisfying those restrictions. The main objective of this scheduler is to: (1) notify the users on whether the given job can be done in a given time limit or not. If the scheduler can meet the given deadline then it can proceed further with job execution. If not, then the user has to alter the given time,e limit (deadline) so that processing can be done on time. (2) this scheduler tries to increase the number of jobs in a cluster without hindering the user given deadline [33].
+
+3.2.6. Matchmaking algorithm
+The data locality is one of the main issues that need to be kept in mind while scheduling tasks. This matchmaking algorithm focuses on improving the location of map tasks. This algorithm has been combined with Hadoop's default fair and FIFO scheduler. This algorithm focuses on improving the locality of data and the average response time [4], [34], [35], [36].
+
+3.2.7. LARTS: Locality-Aware reduce task Scheduling
+Hammoud et al. [35] proposed an algorithm that focuses on improving data locality and thereby reducing the network traffic. By modifying the scheduling policies at the reducer’s side, provide the information about the network locations and the sizes to the reducer. Also, this paper discussed the early shuffle on and off issues. Though early shuffle helps in improving the performance and reducing the turnaround time early shuffle also increases the load on the network. As a solution, LARTS asked to start shuffle only after certain processing of mapping is complete and this initiation point of the shuffle is termed as the sweet spot.
+
+3.2.8. Dynamic Proportional share scheduler
+This provides an extension to hadoop schedulers and on the basis of priority it provide QoS and capacity to different users available. This scheduler gives liberty to the user to select jobs, prioritize them and can schedule them. They can also adjust the allocated resources according to the requirements of the job. When no resource allocation is needed and no users are available then this dynamic proportional scheduler works as fair scheduler [36].
+
+3.2.9. Data locality-based scheduler
+This scheduling algorithm aims at improving the performance by allocating the tasks to the node according to the node processing capacity. It’s a data locality based process of scheduling the map and the reduce tasks according to the node capacity. This aims at improving the data locality and performance of MapReduce cluster when compared to Hadoop’s default scheduling algorithms, delay scheduler, and the matchmaking scheduling algorithm [33], [37], [38], [39].
+
+3.2.10. SAMR: A Self-adaptive MapReduce scheduling algorithm
+This focuses on decreasing the run time of a job by classifying the nodes into a map and reduce slow nodes respectively. By this classification, SAMR [31] will not initiate new tasks or the backup tasks to slow nodes. Firstly, it divides the job into a map and reduces tasks and then allocates them for processing and in a meantime, it goes through the past information of the node available at the node itself, and then according to that information, it adjusts the weight of map and reduce stage respectively. By doing so, SAMR receives the progress of each task and can predict the task for backup more accurately.
+
+3.2.11. ATAS (Adaptive task allocation scheduler)
+This paper's focal point is on improving LATE scheduler and Hadoop speculative execution. ATAS [38] uses more precise methods in determining the response time and in determining the tasks that need a backup. ATAS aims to calculate the end time of each task so it can identify the stragglers more efficiently. It divides the nodes into 2 subcategories- quick node and slow nodes, and for processing backup tasks the priority is given to quick nodes rather than slow nodes.
+
+3.2.12. Maximum cost performance (MCP)
+The major pitfall of the MapReduce framework is handling speculative execution and speculative execution is one of the common approaches which can handle the stragglers by taking the backup of slow running tasks on different machines. This paper very gracefully provides us with a proper analysis of the same. Keeping the analysis in mind authors proposed MCP [15] (maximum cost performance) strategy that can handle scenarios that affect the performance. In MCP, for selecting slow tasks authors suggested to use both progress rate and process transmission rate, secondly to forecast speed of the process in execution and its remaining time they use EWMA (Exponentially Weighted Moving Average), thirdly, they used the cost-benefit model to find the task for backup. By focusing on cost performance it not only helps in decreasing the job run time but also improves the throughput.
+
+3.2.13. MapReduce jobs with deadlines
+In this paper [40], the author proposed three interdependent mechanisms for deadline-based MapReduce jobs. First, it asks for ordering the queue of jobs according to the earliest deadline first (EDF). Then for each job with a deadline, check for the number of map and reduce slots and as the job arrives near to the completion re-compute all the available resources for other deadline specified jobs. Thirdly, allocate the extra unallocated slots to the running job slots to improve the overall performance.
+
+3.2.14. Quincy scheduler
+Quincy scheduler focuses on achieving fairness. It follows the flow-based scheduling instead of queue-based scheduling which is used in Hadoop. This author used 4 policies for achieving fairness- 1. Fair share with pre-emption, fair share without pre-emption, unfair sharing with pre-emption, and unfair without pre-emption.
+
+3.2.15. Purlieus
+This method of scheduling focuses on improving both map and reduce phase data locality. It first examines the capacity of map and reduce phases of accessing the data [18]. Based on this examination, purlieus divides the job into 3 categories- map heavy data job, reduce heavy data job, and both map and reduce heavy data jobs. By this categorization, purlieus bifurcate the storage of the jobs, i.e. map or reduce heavy jobs are sent to local memory for storage and non-heavy jobs can be stored anywhere else on the cloud. This method helps in reducing the network traffic and improving the data locality and runtime performance.
+
+3.2.16. ChEsS: Cost-effective scheduling
+Chess [17] is cost-effective scheduling. The objective of this method is to meet the budget limitations and to improve the time of completion of work. This Pareto-based approach follows:
+•
+place every job in the best possible way in terms of performance and cost.
+
+•
+before scheduling a job, it seeks to match the data locality and performance capabilities of the budget constraints. This scheduler helps to improve finish time and throughput compared to the FIFO scheduler.
+
+
+3.2.17. A throughput Optimal Algorithm
+Locality one of the major issue that affects the performance of MapReduce clusters. Improvement in locality help in reducing both processing time and network load. In this paper, the author proposed a technique to maintain a balance between network load and data locality so that maximum throughput can be achieved. In this, they proposed new queueing architecture in which they save the local tasks to the machine and one common queue to all the machines [16]. Now through this architecture, the newly arrived tasks are sent to one of the local machine queue or the JSQ i.e. join the shortest queue, now as soon as the local machine get free from processing it will take the task either from the local queue or from JSQ using max weight policy.
+
+4. Conclusion
+MapReduce handles a huge amount of data gracefully regardless of the hardware restrictions. This paper sums up an extensive survey on Hadoop MapReduce job scheduling. In Hadoop MapReduce, proper scheduling of the jobs is one of the chief factors to achieve better performance of the cluster, hence, getting a lot of attention from various research communities. This paper addresses various scheduling issues and algorithms proposed by different researchers. In this paper, we explained various scheduling techniques or algorithms and compared them with various measures such as data locality, response time, throughput, etc [41]. The author of each algorithm tries to give attention or provide measures to solve one or more of the given problems. From this comparative study, we conclude Hadoop basic schedulers are not efficient enough to handle various issues like locality, fairness, and speculative execution. For resolving the above issues various schedulers or techniques have been designed by different researchers. Though many researchers contributed their time and efforts in improving data locality issues, still this area needs more attention, in terms of decreasing the job execution time and thereby increasing the performance. This comparative analysis is conducted to help researchers in selecting the propitious area for researching the Hadoop MapReduce.
+
+References
+[1]
+Y. Zhang, L. Cui, W. Wang, and Y. Zhang, “A survey on software defined networking with multiple controllers,” J. Netw. Comput. Appl., vol. 103, no. December 2017, pp. 101–118, 2018.
+Google Scholar
+[2]
+T. Advisor, A. Prof, and Y. Tzitzikas, “Entity-based Summarization of Web Search Results using MapReduce Ioannis Kitsos.”
+Google Scholar
+[3]
+X. Xiaobing, B. Chao, and C. Feng, “An Insight into Traffic Safety Management System Platform based on Cloud Computing,” Procedia - Soc. Behav. Sci., vol. 96, no. Cictp, pp. 2643–2646, 2013.
+Google Scholar
+[4]
+S.N. Khezr, N.J. Navimipour
+MapReduce and Its Applications, Challenges, and Architecture: a Comprehensive Review and Directions for Future Research
+J. Grid Comput., 15 (3) (2017), pp. 295-321
+View article CrossRefView in ScopusGoogle Scholar
+[5]
+N. S. Naik, A. Negi, and V. N. Sastry, “A review of adaptive approaches to MapReduce scheduling in heterogeneous environments,” Proc. 2014 Int. Conf. Adv. Comput. Commun. Informatics, ICACCI 2014, pp. 677–683, 2014.
+Google Scholar
+[6]
+M. W. ur Rahman, N. S. Islam, X. Lu, D. Shankar, and D. K. (DK. Panda, “MR-Advisor: A comprehensive tuning, profiling, and prediction tool for MapReduce execution frameworks on HPC clusters,” J. Parallel Distrib. Comput., vol. 120, pp. 237–250, 2018
+Google Scholar
+[7]
+H. Singh, S. Bawa
+A MapReduce-based scalable discovery and indexing of structured big data
+Futur. Gener. Comput. Syst., 73 (2017), pp. 32-43
+View PDFView articleCrossRefView in ScopusGoogle Scholar
+[8]
+A.K. Tripathi, K. Sharma, M. Bala
+A Novel Clustering Method Using Enhanced Grey Wolf Optimizer and MapReduce
+Big Data Res., 14 (2018), pp. 93-100
+View PDFView articleCrossRefGoogle Scholar
+[9]
+Z. Lu, N. Wang, J. Wu, M. Qiu
+IoTDeM: An IoT Big Data-oriented MapReduce performance prediction extended model in multiple edge clouds
+J. Parallel Distrib. Comput., 118 (2018), pp. 316-327
+View PDFView articleView in ScopusGoogle Scholar
+[10]
+S. Gault, S. Gault, I. Mapreduce, C. Other, C. Morin
+“Improving MapReduce Performance on Clusters To cite this version : HAL Id : tel-01146365 Improving MapReduce Performance on
+Clusters” (2015)
+Google Scholar
+[11]
+S. Sangavi, A. Vanmathi, R. Gayathri, R. Raju, P. Victer Paul, P. Dhavachelvan
+An enhanced DACHE model for the MapReduce environment
+Procedia Comput. Sci., 50 (2015), pp. 579-584
+View PDFView articleView in ScopusGoogle Scholar
+[12]
+L. Wang, et al.
+G-Hadoop: MapReduce across distributed data centers for data-intensive computing
+Futur. Gener. Comput. Syst., 29 (3) (2013), pp. 739-750
+View PDFView articleView in ScopusGoogle Scholar
+[13]
+G. Manogaran, D. Lopez, N. Chilamkurti
+In-Mapper combiner based MapReduce algorithm for processing of big climate data
+Futur. Gener. Comput. Syst., 86 (2018), pp. 433-445
+View PDFView articleView in ScopusGoogle Scholar
+[14]
+J. Li, Y. Liu, J. Pan, P. Zhang, W. Chen, L. Wang
+Map-Balance-Reduce: An improved parallel programming model for load balancing of MapReduce
+Futur. Gener. Comput. Syst. (2016)
+Google Scholar
+[15]
+Q. Chen, D. Zhang, M. Guo, Q. Deng, and S. Guo, “SAMR: A self-adaptive MapReduce scheduling algorithm in heterogeneous environment,” Proc. - 10th IEEE Int. Conf. Comput. Inf. Technol. CIT-2010, 7th IEEE Int. Conf. Embed. Softw. Syst. ICESS-2010, ScalCom-2010, no. Cit, pp. 2736–2743, 2010.
+Google Scholar
+[16]
+S. Hekmat, K. Morgan, M. Soltani, R. Gough
+Sensory evaluation of locally-grown fruit purees and inulin fibre on probiotic yogurt in Mwanza, Tanzania and the microbial analysis of probiotic yogurt fortified with Moringa oleifera
+J. Heal. Popul. Nutr., 33 (1) (2015), pp. 60-67
+View in ScopusGoogle Scholar
+[17]
+D. Saxena, V. Raychoudhury, N. Suri, C. Becker, J. Cao
+Named Data Networking: A survey
+Comput. Sci. Rev., 19 (2016), pp. 15-55
+View PDFView articleView in ScopusGoogle Scholar
+[18]
+J. Ferreira, et al.
+Cooperative sensing for improved traffic efficiency: The highway field trial
+Comput. Networks, 143 (2018), pp. 82-97
+View PDFView articleView in ScopusGoogle Scholar
+[19]
+J. B. Ernst, S. C. Kremer, and J. J. P. C. Rodrigues, “A survey of QoS/QoE mechanisms in heterogeneous wireless networks,” Phys. Commun., vol. 13, no. PB, pp. 61–72, 2014
+Google Scholar
+[20]
+A.M. Nagy, V. Simon
+Survey on traffic prediction in smart cities
+Pervasive Mob. Comput., 50 (2018), pp. 148-163
+View PDFView articleView in ScopusGoogle Scholar
+[21]
+] C. J. VAN VEEN, “Een bijdrage tot de kennis van de jeugdige commune delinquent.,” Ned. Tijdschr. Psychol., vol. 4, no. 4, pp. 319–339, 1949.
+Google Scholar
+[22]
+S. Ibrahim, T.D. Phan, A. Carpen-Amarie, H.E. Chihoub, D. Moise, G. Antoniu
+Governing energy consumption in Hadoop through CPU frequency scaling: An analysis
+Futur. Gener. Comput. Syst., 54 (2016), pp. 219-232
+View PDFView articleView in ScopusGoogle Scholar
+[23]
+F. Shabestari, A. M. Rahmani, N. J. Navimipour, and S. Jabbehdari, “A taxonomy of software-based and hardware-based approaches for energy efficiency management in the Hadoop,” J. Netw. Comput. Appl., vol. 126, no. April 2018, pp. 162–177, 2019
+Google Scholar
+[24]
+X. Ling, Y. Yuan, D. Wang, J. Liu, J. Yang
+Joint scheduling of MapReduce jobs with servers: Performance bounds and experiments
+J. Parallel Distrib. Comput., 90–91 (2016), pp. 52-66
+View PDFView articleView in ScopusGoogle Scholar
+[25]
+K. Neshatpour, et al.
+Energy-efficient acceleration of MapReduce applications using FPGAs
+J. Parallel Distrib. Comput., 119 (2018), pp. 1-17
+View PDFView articleView in ScopusGoogle Scholar
+[26]
+A. Spivak, D. Nasonov
+Data Preloading and Data Placement for MapReduce Performance Improving
+Procedia Comput. Sci., 101 (2016), pp. 379-387
+View PDFView articleView in ScopusGoogle Scholar
+[27]
+J. Veiga, R.R. Expósito, G.L. Taboada, J. Touriño
+Flame-MR: An event-driven architecture for MapReduce applications
+Futur. Gener. Comput. Syst., 65 (2016), pp. 46-56
+View PDFView articleView in ScopusGoogle Scholar
+[28]
+C.H. Hsu, K.D. Slagter, Y.C. Chung
+Locality and loading aware virtual machine mapping techniques for optimizing communications in MapReduce applications
+Futur. Gener. Comput. Syst., 53 (2015), pp. 43-54
+View PDFView articleView in ScopusGoogle Scholar
+[29]
+M. R. Ghazi and D. Gangodkar, “Hadoop, mapreduce and HDFS: A developers perspective,” Procedia Comput. Sci., vol. 48, no. C, pp. 45–50, 2015
+Google Scholar
+[30]
+N.S. Naik, A. Negi, T.B. Tapas, R. Anitha
+A data locality based scheduler to enhance MapReduce performance in heterogeneous environments
+Futur. Gener. Comput. Syst., 90 (2019), pp. 423-434
+View PDFView articleView in ScopusGoogle Scholar
+[31]
+S. Yang, Y. Chen
+Journal of Network and Computer Applications Design adaptive task allocation scheduler to improve MapReduce performance in heterogeneous clouds
+J. Netw. Comput. Appl., 57 (2015), pp. 61-70
+View PDFView articleCrossRefView in ScopusGoogle Scholar
+[32]
+Z. Tang, J. Zhou, K. Li, R. Li
+A MapReduce task scheduling algorithm for deadline constraints
+Cluster Comput., 16 (4) (2013), pp. 651-662
+View article CrossRefView in ScopusGoogle Scholar
+[33]
+Z. Guo and G. Fox, “Improving MapReduce performance in heterogeneous network environments and resource utilization,” Proc. - 12th IEEE/ACM Int. Symp. Clust. Cloud Grid Comput. CCGrid 2012, pp. 714–716, 2012.
+Google Scholar
+[34]
+S.R. Pakize
+A Comprehensive View of Hadoop MapReduce Scheduling Algorithms
+Int. J. Comput. Networks Commun. Secur., 2 (9) (2014), pp. 308-317
+Google Scholar
+[35]
+N. K. Seera and S. Taruna, “A Novel Framework to optimize I/O Cost in MapReduce: An Index based Solution,” Procedia Comput. Sci., vol. 132, no. Iccids, pp. 1270–1279, 2018.
+Google Scholar
+[36]
+B.T. Rao, L.S.S. Reddy
+“Survey on Improved Scheduling in Hadoop MapReduce in
+Cloud Environments”, 34 (9) (2012), pp. 29-33
+Google Scholar
+[37]
+J. Veiga, R.R. Expósito, G.L. Taboada, J. Touriño
+Enhancing in-memory efficiency for MapReduce-based data processing
+J. Parallel Distrib. Comput., 120 (2018), pp. 323-338
+View PDFView articleView in ScopusGoogle Scholar
+[38]
+B. Memishi, M.S. Pérez, G. Antoniu
+Diarchy: An optimized management approach for MapReduce masters
+Procedia Comput. Sci., 51 (1) (2015), pp. 9-18
+View PDFView articleView in ScopusGoogle Scholar
+[39]
+R. Gu, et al.
+SHadoop: Improving MapReduce performance by optimizing job execution mechanism in Hadoop clusters
+J. Parallel Distrib. Comput., 74 (3) (2014), pp. 2166-2179
+View PDFView articleView in ScopusGoogle Scholar
+[40]
+S. Rehman, “Locality-Aware Reduce Task Scheduling for MapReduce Mohammad Hammoud and Presented By : Problem At Hand,” pp. 1–14.
+Google Scholar
+[41]
+H. Abusaada, C. Vellguth, A. Elshater
+Handbook of Research on Digital Research Methods and Architectural Tools in Urban Planning and Design
